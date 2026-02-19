@@ -1,0 +1,14 @@
+{
+    "manifest_version": 3,
+    "name": "IG DM Reel Scroller",
+    "version": "1.0",
+    "description": "It automatically scrolls through all reels in any of your DMs seamlessly.",
+    "permissions": [],
+    "content_scripts": [
+        {
+            "matches": ["https://www.instagram.com/*"],
+            "js": ["content.js"],
+            "run_at": "document_idle"
+        }
+    ]
+}
