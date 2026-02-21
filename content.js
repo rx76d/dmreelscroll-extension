@@ -2,59 +2,88 @@
     'use strict';
 
     const CONFIG = {
-        minWidth: 100,
-        minHeight: 140,
-        watchBuffer: 0.5,
-        scrollDelay: 1000,
-        photoDuration: 3,
-        maxLoadWait:5000
+        minWidth: 100, minHeight: 140,
+        watchBuffer: 0.5, scrollDelay: 1000,
+        photoDuration: 3, maxLoadWait: 5000
     };
 
     let isRunning = false;
-    let playDirection ='down';
-    
+    let playDirection = 'down';
+
+    chrome.storage.local.get(['igExtensionEnabled'], function(result) {
+
+        if (result.igExtensionEnabled !== false) {
+            setTimeout(createUI, 2500);
+        }
+    });
+
+    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+        if (request.action === "toggleState") {
+            if (request.enabled) {
+                createUI();
+            } else {
+                removeUI();
+            }
+        }
+    });
+
+    function removeUI() {
+        isRunning = false;
+        const ui = document.getElementById('ig-visual-ui');
+        if (ui) ui.remove();
+    }
+
     function createUI() {
         if (document.getElementById('ig-visual-ui')) return;
 
         const div = document.createElement('div');
-        div.id = 'ig-visual-ui'
+        div.id = 'ig-visual-ui';
+        
         Object.assign(div.style, {
             position: 'fixed', bottom: '20px', right: '20px', zIndex: '9999999',
-            backgroundColor: '#lalala', padding: '12px', borderRadius: '12px',
+            backgroundColor: 'rgba(20, 20, 20, 0.65)',
+            backdropFilter: 'blur(12px)',
+            webkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+            padding: '15px', borderRadius: '16px',
             color: 'white', fontFamily: 'sans-serif',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.5)', border: '1px solid #333',
-            display: 'flex', flexDirection: 'column', gap: '8px', width: '220px'
+            display: 'flex', flexDirection: 'column', gap: '10px', width: '220px',
+            transition: 'opacity 0.3s ease'
         });
 
         const status = document.createElement('div');
         status.id = 'ig-visual-status';
-        status.innerText = 'Extension Ready';
+        status.innerText = 'Ready';
         status.style.fontSize = '12px';
         status.style.textAlign = 'center';
-        status.style.color = '#888';
-        status.style.marginBottom = '5px';
+        status.style.color = 'rgba(255, 255, 255, 0.7)';
 
         const btnRow = document.createElement('div');
         btnRow.style.display = 'flex';
-        btnRow.style.gap = '5px';
+        btnRow.style.gap = '8px';
+
+        const btnStyle = {
+            border: 'none', borderRadius: '8px', color: 'white',
+            padding: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: '600'
+        };
 
         const dirBtn = document.createElement('button');
         dirBtn.id = 'ig-visual-dir-btn';
         dirBtn.innerText = '⬇ DOWN';
-        Object.assign(dirBtn.style, {
-            backgroundColor: '#333', border: '1px solid #555', borderRadius: '6px',
-            color: 'white', padding: '8px', cursor: 'pointer', flex: '1', fontSize: '12px'
+        Object.assign(dirBtn.style, btnStyle, {
+            backgroundColor: 'rgba(255, 255, 255, 0.1)', flex: '1',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
         });
         dirBtn.onclick = toggleDirection;
 
         const playBtn = document.createElement('button');
         playBtn.id = 'ig-visual-play-btn';
         playBtn.innerText = '▶ START';
-        Object.assign(playBtn.style, {
-            backgroundColor: '#0095f6', border: 'none', borderRadius: '6px',
-            color: 'white', padding: '8px', cursor: 'pointer', fontWeight: 'bold', flex: '2', fontSize: '13px'
+        Object.assign(playBtn.style, btnStyle, {
+            backgroundColor: '#0095f6', flex: '2',
+            boxShadow: '0 2px 10px rgba(0, 149, 246, 0.3)'
         });
-
         playBtn.onclick = toggleScript;
 
         btnRow.appendChild(dirBtn);
@@ -64,38 +93,31 @@
         document.body.appendChild(div);
     }
 
-    function updateStatus(text, color = '#ccc') {
+    function updateStatus(text, color = 'rgba(255, 255, 255, 0.8)') {
         const el = document.getElementById('ig-visual-status');
-        if (el) {
-            el.innerText = text;
-            el.style.color = color;
-        }
+        if (el) { el.innerText = text; el.style.color = color; }
     }
 
     function toggleDirection() {
         const btn = document.getElementById('ig-visual-dir-btn');
+        if (!btn) return;
         if (playDirection === 'down') {
-            playDirection = 'up';
-            btn.innerText = '⬆ UP';
-            updateStatus("Direction: Bottom to Top");
+            playDirection = 'up'; btn.innerText = '⬆ UP'; updateStatus("Top to Bottom");
         } else {
-            playDirection = 'down';
-            btn.innerText = '⬇ DOWN';
-            updateStatus("Direction: Top to Bottom");
+            playDirection = 'down'; btn.innerText = '⬇ DOWN'; updateStatus("Bottom to Top");
         }
     }
 
     function toggleScript() {
         const btn = document.getElementById('ig-visual-play-btn');
+        if (!btn) return;
         if (isRunning) {
             isRunning = false;
-            btn.innerText = '▶ START';
-            btn.style.backgroundColor = '#0095f6';
+            btn.innerText = '▶ START'; btn.style.backgroundColor = '#0095f6';
             updateStatus("Stopped");
         } else {
             isRunning = true;
-            btn.innerText = '⏹ STOP';
-            btn.style.backgroundColor = '#ed4956';
+            btn.innerText = '⏹ STOP'; btn.style.backgroundColor = '#ff3040';
             findAndPlayNext();
         }
     }
@@ -105,33 +127,25 @@
         const allImages = Array.from(document.querySelectorAll('img'));
         const candidates = allImages.filter(img => {
             const rect = img.getBoundingClientRect();
-            const isVisible = rect.width > 0 && rect.height > 0;
-            const isBigEnough = rect.width > CONFIG.minWidth && rect.height > CONFIG.minHeight;
-            const isNew = !img.dataset.igReelWatched;
-            const isVertical = rect.height > rect.width;
-            return isVisible && isBigEnough && isNew && isVertical;
+            if (rect.width < CONFIG.minWidth || rect.height < CONFIG.minHeight) return false;
+            if (img.dataset.igReelWatched) return false;
+            return rect.height > rect.width;
         });
 
         if (candidates.length === 0) {
-            updateStatus("No new reels found.\nScroll & check direction.", "#ffaa00");
+            updateStatus("No new reels found.", "#ffaa00");
             isRunning = false;
-            document.getElementById('ig-visual-play-btn').innerText = '▶ START';
-            document.getElementById('ig-visual-play-btn').style.backgroundColor = '#0095f6';
+            const btn = document.getElementById('ig-visual-play-btn');
+            if(btn) { btn.innerText = '▶ START'; btn.style.backgroundColor = '#0095f6'; }
             return;
         }
 
-        let targetImg;
-        if (playDirection === 'down') {
-            targetImg = candidates[0];
-        } else {
-            targetImg = candidates[candidates.length - 1];
-        }
+        let targetImg = (playDirection === 'down') ? candidates[0] : candidates[candidates.length - 1];
 
-        updateStatus(`Queue: ${candidates.length} | Dir: ${playDirection.toUpperCase()}`, "#00ff00");
+        updateStatus(`Queue: ${candidates.length}`, "#00ff00");
         targetImg.scrollIntoView({ behavior: 'smooth', block: 'center' });
         targetImg.style.outline = "4px solid #00ff00"; 
-        targetImg.style.transition = "outline 0.3s";
-
+        
         setTimeout(() => {
             if (!isRunning) return;
             updateStatus("Opening...");
@@ -144,54 +158,37 @@
 
     function waitForModal() {
         if (!isRunning) return;
-
         let attempts = 0;
         const check = setInterval(() => {
             attempts++;
             const dialog = document.querySelector('div[role="dialog"]');
-
             if (!dialog) {
-                 if (attempts * 500 > CONFIG.maxLoadWait) {
-                     clearInterval(check);
-                     closeModal();
-                 }
+                 if (attempts * 500 > CONFIG.maxLoadWait) { clearInterval(check); closeModal(); }
                  return;
             }
             const video = dialog.querySelector('video');
             const closeBtn = document.querySelector('svg[aria-label="Close"]');
 
             if (video) {
-                clearInterval(check);
-                monitorVideo(video);
+                clearInterval(check); monitorVideo(video);
             } else if (attempts > 6 && closeBtn) {
-                clearInterval(check);
-                updateStatus("Photo detected.");
+                clearInterval(check); updateStatus("Photo detected.");
                 setTimeout(closeModal, CONFIG.photoDuration * 1000);
             }
-
-            if (attempts * 500 > CONFIG.maxLoadWait) {
-                clearInterval(check);
-                closeModal();
-            }
+            if (attempts * 500 > CONFIG.maxLoadWait) { clearInterval(check); closeModal(); }
         }, 500);
     }
 
     function monitorVideo(video) {
         if (!isRunning) return;
         updateStatus("Watching...");
-
-        if (video.paused) video.play().catch(e => console.log("Autoplay blocked"));
-
+        if (video.paused) video.play().catch(() => {});
         let lastTime = -1;
         const checkInterval = setInterval(() => {
             if (!isRunning) { clearInterval(checkInterval); return; }
-
-            const t = video.currentTime;
-            const d = video.duration;
-
+            const t = video.currentTime; const d = video.duration;
             if ((d > 0 && d - t < 0.4) || (lastTime > 1 && t < 0.5)) {
-                clearInterval(checkInterval);
-                updateStatus("Finished.");
+                clearInterval(checkInterval); updateStatus("Finished.");
                 setTimeout(closeModal, CONFIG.watchBuffer * 1000);
             }
             lastTime = t;
@@ -200,7 +197,6 @@
 
     function closeModal() {
         updateStatus("Closing...");
-        
         const closeSvg = document.querySelector('svg[aria-label="Close"]');
         if (closeSvg && closeSvg.closest('div[role="button"]')) {
             closeSvg.closest('div[role="button"]').click();
@@ -208,12 +204,6 @@
             const escEvent = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true });
             document.body.dispatchEvent(escEvent);
         }
-
-        setTimeout(() => {
-            if (isRunning) findAndPlayNext();
-        }, 1200);
+        setTimeout(() => { if (isRunning) findAndPlayNext(); }, 1200);
     }
-
-    setTimeout(createUI, 2500);
-
 })();
