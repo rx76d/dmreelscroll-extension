@@ -41,6 +41,7 @@ This extension automatically closes the current reel and opens the next one for 
 
 ## 📸 Screenshot
 
+<img width="300" height="121" alt="image" src="https://github.com/user-attachments/assets/a4459cc5-2a55-4a44-b24a-f11e15ae105c" />
 
 
 ## License:
