@@ -11,7 +11,6 @@
     let playDirection = 'down';
 
     chrome.storage.local.get(['igExtensionEnabled'], function(result) {
-
         if (result.igExtensionEnabled !== false) {
             setTimeout(createUI, 2500);
         }
@@ -49,7 +48,9 @@
             padding: '15px', borderRadius: '16px',
             color: 'white', fontFamily: 'sans-serif',
             display: 'flex', flexDirection: 'column', gap: '10px', width: '220px',
-            transition: 'opacity 0.3s ease'
+            transition: 'opacity 0.3s ease',
+            cursor: 'move',
+            userSelect: 'none' 
         });
 
         const status = document.createElement('div');
@@ -58,6 +59,7 @@
         status.style.fontSize = '12px';
         status.style.textAlign = 'center';
         status.style.color = 'rgba(255, 255, 255, 0.7)';
+        status.style.pointerEvents = 'none';
 
         const btnRow = document.createElement('div');
         btnRow.style.display = 'flex';
@@ -76,7 +78,7 @@
             border: '1px solid rgba(255, 255, 255, 0.1)'
         });
         dirBtn.onclick = toggleDirection;
-
+        dirBtn.onmousedown = (e) => e.stopPropagation(); 
         const playBtn = document.createElement('button');
         playBtn.id = 'ig-visual-play-btn';
         playBtn.innerText = '▶ START';
@@ -85,12 +87,51 @@
             boxShadow: '0 2px 10px rgba(0, 149, 246, 0.3)'
         });
         playBtn.onclick = toggleScript;
-
+        playBtn.onmousedown = (e) => e.stopPropagation();
         btnRow.appendChild(dirBtn);
         btnRow.appendChild(playBtn);
         div.appendChild(status);
         div.appendChild(btnRow);
         document.body.appendChild(div);
+
+        makeDraggable(div);
+    }
+    function makeDraggable(element) {
+        let isDragging = false;
+        let startX, startY, initialLeft, initialTop;
+
+        element.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return;
+
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+
+            const rect = element.getBoundingClientRect();
+            initialLeft = rect.left;
+            initialTop = rect.top;
+
+            element.style.bottom = 'auto';
+            element.style.right = 'auto';
+            element.style.left = initialLeft + 'px';
+            element.style.top = initialTop + 'px';
+            element.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            element.style.left = (initialLeft + dx) + 'px';
+            element.style.top = (initialTop + dy) + 'px';
+        });
+
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                element.style.cursor = 'move';
+            }
+        });
     }
 
     function updateStatus(text, color = 'rgba(255, 255, 255, 0.8)') {
@@ -102,9 +143,9 @@
         const btn = document.getElementById('ig-visual-dir-btn');
         if (!btn) return;
         if (playDirection === 'down') {
-            playDirection = 'up'; btn.innerText = '⬆ UP'; updateStatus("Top to Bottom");
+            playDirection = 'up'; btn.innerText = '⬆ UP'; updateStatus("NOW: Top to Bottom");
         } else {
-            playDirection = 'down'; btn.innerText = '⬇ DOWN'; updateStatus("Bottom to Top");
+            playDirection = 'down'; btn.innerText = '⬇ DOWN'; updateStatus("NOW: Bottom to Top");
         }
     }
 
