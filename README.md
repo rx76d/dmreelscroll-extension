@@ -1,6 +1,6 @@
 # DMreelScroll
 
-![Version](https://img.shields.io/badge/version-1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 **A Browser extension which automatically scrolls through all reels in any of your DMs seamlessly.**
