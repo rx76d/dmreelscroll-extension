@@ -2,132 +2,153 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="icon" type="image/png" href="/image.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>IG DM Reel Scroller</title>
-    <meta name="description" content="A Browser extension which automatically scrolls through all reels in any of your DMs seamlessly." />
+    <title>IG DM Player</title>
     <style>
         body {
-            width: 200px;
+            width: 230px;
+            height: 360px;
             margin: 0;
-            padding: 10px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #f6f6f6;
-        }
-
-        .container {
-            background-color: white;
-            border-radius: 16px;
             padding: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f6f7f9;
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 12px;
         }
 
         .header {
-            font-size: 14px;
-            font-weight: 600;
-            color: #333;
+            font-size: 16px;
+            font-weight: 700;
+            color: #222;
+            margin-bottom: 15px;
+            text-align: center;
         }
 
-        .credit-row {
+        .controls {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-size: 12px;
-            color: #666;
-            text-decoration: none;
+            gap: 8px;
+            margin-bottom: 12px;
         }
 
-        .credit-row:hover {
-            color: #000;
-        }
-
-        .credit-row svg {
-            fill: #333;
-            width: 16px;
-            height: 16px;
-            transition: fill 0.2s;
-        }
-        .credit-row:hover svg {
-            fill: #0095f6;
-        }
-
-        .switch-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 12px;
-            color: #555;
-        }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 22px;
-        }
-
-        .switch input { 
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
+        .btn {
+            border: none;
+            border-radius: 8px;
+            color: white;
+            padding: 10px;
             cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
+            font-size: 12px;
+            font-weight: 600;
+            flex: 1;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn-start { background-color: #0095f6; }
+        .btn-stop { background-color: #ff3040; display: none; }
+        .btn-dir { background-color: #363636; }
+
+        .settings-box {
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex-grow: 1;
         }
 
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #444;
+        }
+
+        /* Switch */
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .4s; border-radius: 34px;
+        }
         .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
+            position: absolute; content: ""; height: 14px; width: 14px;
+            left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #0095f6; }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        /* Emoji Selector */
+        .emoji-selector {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #f0f0f0;
+            padding: 4px;
+            border-radius: 8px;
+        }
+        .emoji-btn {
+            background: none; border: none; cursor: pointer;
+            font-size: 14px; padding: 0 5px; color: #555;
+        }
+        .emoji-btn:hover { color: #000; }
+        .emoji-display {
+            font-size: 20px;
+            min-width: 30px;
+            text-align: center;
         }
 
-        input:checked + .slider {
-            background-color: #0095f6;
+        /* Footer */
+        .footer {
+            margin-top: auto; padding-top: 10px; border-top: 1px solid #e0e0e0;
+            display: flex; justify-content: center;
         }
-
-        input:checked + .slider:before {
-            transform: translateX(18px);
+        .credit-row {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 11px; color: #888; text-decoration: none;
         }
+        .credit-row:hover { color: #000; }
+        .credit-row svg { width: 14px; height: 14px; fill: currentColor; }
     </style>
 </head>
 <body>
+    <div class="header">IG DM Player</div>
+    
+    <div class="controls">
+        <button id="popDirBtn" class="btn btn-dir">⬇ DOWN</button>
+        <button id="popStartBtn" class="btn btn-start">▶ START</button>
+        <button id="popStopBtn" class="btn btn-stop">⏹ STOP</button>
+    </div>
 
-    <div class="container">
-        <div class="header">IG DM Reel Scroller</div>
-
-        <a href="https://github.com/rx76d" target="_blank" class="credit-row" title="Visit GitHub">
-            Developed by rx76d
-            <svg viewBox="0 0 16 16">
-                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-            </svg>
-        </a>
-
-        <div class="switch-container">
-            <span>Enable Overlay</span>
-            <label class="switch">
-                <input type="checkbox" id="masterToggle">
-                <span class="slider"></span>
-            </label>
+    <div class="settings-box">
+        <div class="row">
+            <span>Show Overlay</span>
+            <label class="switch"><input type="checkbox" id="masterToggle"><span class="slider"></span></label>
+        </div>
+        <div class="row">
+            <span>Auto React</span>
+            <label class="switch"><input type="checkbox" id="autoReactToggle"><span class="slider"></span></label>
+        </div>
+        <div class="row">
+            <span>React Emoji</span>
+            <div class="emoji-selector">
+                <button id="prevEmoji" class="emoji-btn">◀</button>
+                <span id="emojiDisplay" class="emoji-display">❤️</span>
+                <button id="nextEmoji" class="emoji-btn">▶</button>
+            </div>
+        </div>
+        <div style="font-size: 10px; color: #999; text-align: center;">
+            Reactions happen after closing reel.
         </div>
     </div>
 
+    <div class="footer">
+        <a href="https://github.com/rx76d" target="_blank" class="credit-row">
+            Developed by rx76d
+            <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        </a>
+    </div>
     <script src="popup.js"></script>
 </body>
 </html>
